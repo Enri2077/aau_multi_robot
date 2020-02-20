@@ -4,6 +4,8 @@
 #include <ExplorationPlanner.h>
 #include <navfn/navfn_ros.h>
 #include "ros/ros.h"
+#include <tf/transform_listener.h>
+#include <tf/transform_datatypes.h>
 #include "hungarian.h"
 #include <ros/console.h>
 #include <costmap_2d/costmap_2d_ros.h>
@@ -23,11 +25,11 @@ namespace explorationPlanner
 	class ExplorationPlanner
 	{
 	public:
- 
+
             struct frontier_t
             {
                 int id;
-                int detected_by_robot;  
+                int detected_by_robot;
                 std::string detected_by_robot_str;
                 double robot_home_x;
                 double robot_home_y;
@@ -35,103 +37,103 @@ namespace explorationPlanner
                 double y_coordinate;
                 int distance_to_robot;
                 int dist_to_robot;
-            } frontier, unreachable_frontier; 
+            } frontier, unreachable_frontier;
 
             struct responded_t
             {
-                int robot_number; 
+                int robot_number;
                 std::string robot_str;
-                int auction_number; 
+                int auction_number;
             };
-            
+
             struct cluster_t
             {
                 std::vector<frontier_t> cluster_element;
                 int id;
                 int unreachable_frontier_count;
             } cluster;
-            
+
             struct transform_point_t
             {
-                int id; 
+                int id;
                 std::string robot_str;
             };
-            
+
             struct requested_cluster_t
             {
                 std::vector<transform_point_t> requested_ids;
-                int own_cluster_id; 
+                int own_cluster_id;
             };
-            
+
             struct auction_pair_t
             {
                 int bid_value;
                 int cluster_id;
             };
-            
+
             struct auction_element_t
             {
-                int robot_id; 
+                int robot_id;
                 std::string detected_by_robot_str;
                 std::vector<auction_pair_t> auction_element;
             };
-            
-            
-            
+
+
+
             struct compare_pair_t
             {
                 int cluster_id;
                 int identical_ids;
             };
-            
+
             boost::mutex store_frontier_mutex, store_visited_mutex, store_negotiation_mutex;
-            boost::mutex publish_subscribe_mutex, callback_mutex, negotiation_mutex, negotiation_callback_mutex; 
+            boost::mutex publish_subscribe_mutex, callback_mutex, negotiation_mutex, negotiation_callback_mutex;
             boost::mutex position_mutex, auction_mutex;
             boost::mutex cluster_mutex;
             boost::thread thr_auction_status, thr_auction_pid;
-            
-            
+
+
             ros::ServiceClient client;
 
             ros::Publisher pub_frontiers, pub_visited_frontiers, pub_negotion, pub_negotion_first, pub_Point;
             ros::Publisher pub_frontiers_points, pub_visited_frontiers_points;
-            ros::Publisher pub_auctioning, pub_auctioning_status; 
+            ros::Publisher pub_auctioning, pub_auctioning_status;
             ros::Subscriber sub_frontiers, sub_visited_frontiers, sub_negotioation, sub_negotioation_first;
             ros::Subscriber sub_control;
             ros::Subscriber sub_auctioning, sub_auctioning_status;
-            ros::Subscriber sub_position, sub_robot;        
-            
-            ros::Publisher pub_auctioning_first; 
-            ros::Subscriber sub_auctioning_first; 
-            
+            ros::Subscriber sub_position, sub_robot;
+
+            ros::Publisher pub_auctioning_first;
+            ros::Subscriber sub_auctioning_first;
+
             ros::Publisher pub_clusters, pub_cluster_grid_0, pub_cluster_grid_1, pub_cluster_grid_2, pub_cluster_grid_3, pub_cluster_grid_4, pub_cluster_grid_5, pub_cluster_grid_6, pub_cluster_grid_7, pub_cluster_grid_8, pub_cluster_grid_9,
             pub_cluster_grid_10,pub_cluster_grid_11,pub_cluster_grid_12,pub_cluster_grid_13,pub_cluster_grid_14,pub_cluster_grid_15,pub_cluster_grid_16,pub_cluster_grid_17,pub_cluster_grid_18,pub_cluster_grid_19;
-            
+
             ros::NodeHandle nh_frontier, nh_visited_frontier;
             ros::NodeHandle nh_Point, nh_visited_Point, nh_frontiers_points;
             ros::NodeHandle nh_transform, nh_negotiation, nh_negotiation_first;
-            ros::NodeHandle nh_auction, nh_auction_status; 
+            ros::NodeHandle nh_auction, nh_auction_status;
             ros::NodeHandle nh_cluster, nh_cluster_grid;
             ros::NodeHandle nh_position, nh_robot;
-            ros::NodeHandle nh_control; 
+            ros::NodeHandle nh_control;
             ros::NodeHandle *nh_service;
-            ros::NodeHandle nh; 
+            ros::NodeHandle nh;
             ros::NodeHandle nh_auction_first;
-            
+
             ros::MultiThreadedSpinner spinner;
-            
+
             std::vector<int> allFrontiers;
-           
+
             std::vector<auction_element_t> auction;
             std::vector<frontier_t> frontiers;
             std::vector<frontier_t> visited_frontiers;
             std::vector<frontier_t> unreachable_frontiers;
-            
+
             std::vector<frontier_t> seen_frontier_list;
             std::vector<frontier_t> negotiation_list, my_negotiation_list;
-            
+
             std::vector <responded_t> robots_already_responded;
-            
+
             std::vector <double> goal_buffer_x;
             std::vector <double> goal_buffer_y;
 
@@ -140,13 +142,13 @@ namespace explorationPlanner
 
             std::vector<cluster_t> clusters;
             std::vector<adhoc_communication::ExpCluster> unrecognized_occupied_clusters;
-            
+
             std::vector<transform_point_t> transformedPointsFromOtherRobot_frontiers, transformedPointsFromOtherRobot_visited_frontiers;
-            
+
             std::vector<int> already_used_ids, id_previously_detected;
-            
-            adhoc_communication::MmListOfPoints other_robots_positions; 
-            
+
+            adhoc_communication::MmListOfPoints other_robots_positions;
+
             tf::TransformListener listener;
             tf::StampedTransform transform;
             tf::Stamped < tf::Pose > robotPose;
@@ -156,7 +158,7 @@ namespace explorationPlanner
             navfn::NavfnROS nav;
 
             ros::ServiceClient ssendFrontier, ssendAuction;
-            
+
             std::string trajectory_strategy;
             bool first_run, first_negotiation_run;
             bool start_thr_auction;
@@ -169,7 +171,7 @@ namespace explorationPlanner
             bool robot_prefix_empty_param;
             int number_of_auction_bids_received, number_of_robots;
             double other_robots_position_x, other_robots_position_y;
-            int auction_id_number; 
+            int auction_id_number;
             int auction_pid;
             int frontier_seq_number;
             double exploration_travel_path_global;
@@ -188,9 +190,11 @@ namespace explorationPlanner
             std::string robot_str;
             std::vector<std::string> new_robots;
             int next_auction_position_x, next_auction_position_y;
-            
+
             ExplorationPlanner(int robot_id, bool robot_prefix_empty, std::string robot_name_parameter);
             void printFrontiers();
+            bool hasLastGoalFailed();
+            void setHasLastGoalFailed(bool failure);
             bool respondToAuction(std::vector<requested_cluster_t> requested_cluster_ids, int auction_id_number);
             bool clusterIdToElementIds(int cluster_id, std::vector<transform_point_t>* occupied_ids);
             bool initialize_auctioning(std::vector<double> *final_goal);
@@ -214,6 +218,7 @@ namespace explorationPlanner
             void visualizeClustersConsole();
             void clear_Visualized_Cluster_Cells(std::vector<int> ids);
             void initialize_planner(std::string name, costmap_2d::Costmap2DROS *costmap, costmap_2d::Costmap2DROS *costmap_global);
+			unsigned char getCost(costmap_2d::Costmap2DROS *costmap, unsigned int cell_x, unsigned int cell_y);
             void findFrontiers();
             bool check_efficiency_of_goal(double x, double y);
             void clearVisitedAndSeenFrontiersFromClusters();
@@ -245,13 +250,13 @@ namespace explorationPlanner
             bool clusterFrontiers();
             void visualize_Clusters();
             void visualize_Cluster_Cells();
-            
+
             bool transformToOwnCoordinates_frontiers();
             bool transformToOwnCoordinates_visited_frontiers();
 
             bool sendToMulticast(std::string multi_cast_group, adhoc_communication::ExpFrontier frontier_to_send, std::string topic);
             bool sendToMulticastAuction(std::string multi_cast_group, adhoc_communication::ExpAuction auction_to_send, std::string topic);
-            
+
         private:
 
             //Edit Peter
@@ -320,6 +325,7 @@ namespace explorationPlanner
             double p_alpha_;
             double p_dist_for_goal_reached_;
             double p_same_frontier_dist_;
+            bool hasLastGoalFailed_;
 
             //bool p_plan_in_unknown_;
             //bool p_use_inflated_obs_;

@@ -4,7 +4,7 @@ global_costmap:
     update_frequency: 2
     publish_frequency: 0.1
     static_map: true
-    transform_tolerance: 0.25
+    transform_tolerance: 2.0
     track_unknown_space: true
     unknown_cost_value: 255
 
